@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Notes app
+
+Parameters:
+  DBPassword: 
+    Description: Database password
+    Type: String
+    Default: xyzzy
+
+Resources:
+  NotesEC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [ AWSRegionToAMI , !Ref 'AWS::Region', 64 ]
+      SecurityGroupIds:
+        - !GetAtt myVPC.DefaultSecurityGroup
+      SubnetId: !Ref mySubnet
+
+Outputs:
+  AppURL:
+    Description: URL
+    Value: !GetAtt Endpoint.Address
+    Export:
+      Name: NotesDBAddress
+
+  DBPort:
+    Description: DB Endpoint port
+    Value: !GetAtt Endpoint.Port
+    Export:
+      Name: NotesDBPort
+
