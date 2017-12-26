@@ -3,7 +3,7 @@
 REGION=eu-west-3
 PROFILE=juhocli
 AWS="/usr/local/bin/aws --profile=$PROFILE --region=$REGION"
-TPL="$(cat aws/infrastructure.yaml)"
+TPL="$(cat cfn/infrastructure.yaml)"
 
 create() {
 	$AWS cloudformation create-stack --stack-name notes-infra --template-body "$TPL"
@@ -34,11 +34,13 @@ create_l_zip() {
 }
 
 create_lambda() {
+	F_NAME=$1; shift
+	HANDLER=$1; shift
 	$AWS lambda create-function \
-		--function-name NotesInitDB  \
+		--function-name "$F_NAME"  \
 		--zip-file fileb://./l.zip \
 		--role arn:aws:iam::768079660079:role/NotesLambdaRole \
-		--handler init_db.handler \
+		--handler "$HANDLER" \
 		--runtime python3.6
 #		--vpc-config SubnetIds=comma-separated-subnet-ids,SecurityGroupIds=default-vpc-security-group-id \
 }
@@ -77,7 +79,11 @@ do
 		;;
 		create-l-zip) create_l_zip
 		;;
-		create-lambda) create_lambda
+		create-lambda) create_lambda "$1" "$2"
+		shift; shift
+		;;
+		create-lambdas)
+		create_lambda NotesInitDB init_db.handler
 		;;
 		update-lambda) update_lambda
 		;;

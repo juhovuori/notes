@@ -2,3 +2,4 @@ aws/params.yaml
 env
 l.zip
 output.txt
+__pycache__
