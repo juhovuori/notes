@@ -11,3 +11,7 @@ DNS - domain as parameter, version as default host and some way to set the defau
 elastic beanstalk trial
 opsworks trial
 install on vagrant?
+
+## NOTES
+- db pwd cannot be template parameter
+- 
