@@ -22,8 +22,9 @@ def fetch_note(event, context):
     Fetch single note
     """
 
+    id = event["id"]
     with conn.cursor() as cur:
-        cur.execute("SELECT id, note FROM notes WHERE id = 123")
+        cur.execute("SELECT id, note FROM notes WHERE id = %s", (id, ))
         for row in cur:
             return json.dumps(row)
     return None
