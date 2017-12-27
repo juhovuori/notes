@@ -11,7 +11,7 @@ def logger():
     logger.setLevel(logging.INFO)
     return logger
 
-def conn(db = rds_config.db_name):
+def conn(db=rds_config.db_name):
     "Returns a DB connection"
     log = logger()
     rds_host = rds_config.db_host

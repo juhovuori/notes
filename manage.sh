@@ -28,7 +28,7 @@ create_l_zip() {
 	cp lambda/* "$WD"
 	cp -r env/lib/python3.5/site-packages/* "$WD"
 	pushd "$WD"
-	zip -r "$ZIPFILE" *
+	zip -R "$ZIPFILE" '*.py'
 	popd
 	rm -r "$WD"
 }
@@ -46,13 +46,14 @@ create_lambda() {
 }
 
 update_lambda() {
-		$AWS lambda update-function-code \
-		--function-name NotesInitDB  \
+	F_NAME=$1; shift
+	$AWS lambda update-function-code \
+		--function-name "$F_NAME"  \
 		--zip-file fileb://./l.zip
 }
 
 delete_lambda() {
-		$AWS lambda delete-function \
+	$AWS lambda delete-function \
 		--function-name NotesInitDB
 }
 
@@ -80,12 +81,18 @@ do
 		create-l-zip) create_l_zip
 		;;
 		create-lambda) create_lambda "$1" "$2"
-		shift; shift
+		shift 2
 		;;
 		create-lambdas)
 		create_lambda NotesInitDB init_db.handler
 		;;
-		update-lambda) update_lambda
+		update-lambda) update_lambda "$1"
+		shift
+		;;
+		update-lambdas)
+		update_lambda NotesAdd
+		update_lambda NotesFetch
+		update_lambda NotesList
 		;;
 		delete-lambda) delete_lambda
 		;;
