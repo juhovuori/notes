@@ -18,7 +18,6 @@ create() {
 	STACK_NAME=$1; shift
 	TPL=$1; shift
 	PARAMS=$1; shift
-	echo  		$AWS cloudformation create-stack --stack-name "$STACK_NAME" --parameters="$PARAMS" --template-url "$TPL"
 	$AWS cloudformation create-stack --capabilities CAPABILITY_IAM --stack-name "$STACK_NAME" --parameters="$PARAMS" --template-url "$TPL"
 }
 

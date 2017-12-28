@@ -3,12 +3,28 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Notes infrastructure
 
 Parameters:
+  Name:
+    Description: Environment name (prod/dev/etc.)
+    Type: String
+    Default: dev
+
   DBPassword: 
     Description: Database password
     Type: String
     Default: xyzzyxyz
 
+  ArtifactBucketName:
+    Description: S3 Bucket name for artifacts
+    Type: String
+
 Resources:
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+    BucketName: !Ref ArtifactBucketName
+    DeletionPolicy: Retain
+
   NotesDB:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -22,6 +38,12 @@ Resources:
     DeletionPolicy: Snapshot
 
 Outputs:
+  ArtifactBucket:
+    Description: Name of the S3 bucket for artifacts
+    Value: !GetAtt
+    Export:
+      Name: NotesArtifactBucket.BucketName
+
   DBAddress:
     Description: DB Endpoint address
     Value: !GetAtt NotesDB.Endpoint.Address
