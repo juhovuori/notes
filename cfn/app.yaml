@@ -10,6 +10,10 @@ Parameters:
   Version:
     Description: Immutable version name (git commit hash)
     Type: String
+  ArtifactBucket:
+    Description: S3 bucket that contains app artifacts
+    Type: String
+    Default: notes-artifacts-20171228
   DBPassword: 
     Description: Database password
     Type: String
@@ -33,8 +37,8 @@ Resources:
       Handler: "app.list_notes"
       Role: !GetAtt [ LambdaExecutionRole, Arn ]
       Code:
-        S3Bucket: notes-artifacts
-        S3Key: !Join [ "", ["app-", !Ref Version, ".zip"] ]
+        S3Bucket: !Ref ArtifactBucket
+        S3Key: !Join [ "", ["lambda/app-", !Ref Version, ".zip"] ]
       Runtime: "python3.6"
       Timeout: "3"
 
