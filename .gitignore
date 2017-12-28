@@ -1,5 +1,4 @@
 aws/params.yaml
 env
-l.zip
-output.txt
+target
 __pycache__

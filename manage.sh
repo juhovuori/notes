@@ -3,34 +3,53 @@
 REGION=eu-west-3
 PROFILE=juhocli
 AWS="/usr/local/bin/aws --profile=$PROFILE --region=$REGION"
-TPL="$(cat cfn/infrastructure.yaml)"
+INFRA_TPL="$(cat cfn/infrastructure.yaml)"
+APP_TPL="$(cat cfn/app.yaml)"
+TARGET_DIR="$(pwd)/target"
+ARTIFACT_BUCKET="notes-artifacts-20170909"
+ARTIFACT_PREFIX="lambda/"
+
+mkdir -p "$TARGET_DIR"
 
 create() {
-	$AWS cloudformation create-stack --stack-name notes-infra --template-body "$TPL"
+	STACK_NAME=$1; shift
+	TPL=$2; shift
+	$AWS cloudformation create-stack --stack-name "$STACK_NAME" --template-body "$TPL"
 }
 
 update() {
-	$AWS cloudformation update-stack --stack-name notes-infra --template-body "$TPL"
+	STACK_NAME=$1; shift
+	TPL=$2; shift
+	$AWS cloudformation update-stack --stack-name "$STACK_NAME" --template-body "$TPL"
 }
 
 delete() {
-	$AWS cloudformation delete-stack --stack-name notes-infra
+	STACK_NAME=$1; shift
+	$AWS cloudformation delete-stack --stack-name "$STACK_NAME"
 }
 
 list() {
 	$AWS cloudformation describe-stacks
 }
 
-create_l_zip() {
+create_zip_file() {
 	WD=$(mktemp -d)
-	ZIPFILE=$(pwd)/l.zip
+	ZIPFILE=$1; shift
 	rm $ZIPFILE
 	cp lambda/* "$WD"
 	cp -r env/lib/python3.5/site-packages/* "$WD"
 	pushd "$WD"
-	zip -R "$ZIPFILE" '*.py'
+	zip -qR "$ZIPFILE" '*.py'
 	popd
 	rm -r "$WD"
+	echo $ZIPFILE
+}
+
+push_app() {
+	VERSION=$1; shift
+	ZIP_FILE="$TARGET_DIR/app-$VERSION.zip"
+	create_zip_file $ZIP_FILE
+	$AWS s3 cp "$ZIP_FILE" "s3://$ARTIFACT_BUCKET/${ARTIFACT_PREFIX}app-$VERSION.zip"
 }
 
 create_lambda() {
@@ -38,7 +57,7 @@ create_lambda() {
 	HANDLER=$1; shift
 	$AWS lambda create-function \
 		--function-name "$F_NAME"  \
-		--zip-file fileb://./l.zip \
+		--zip-file fileb://$(TARGET_DIR)/l.zip \
 		--role arn:aws:iam::768079660079:role/NotesLambdaRole \
 		--handler "$HANDLER" \
 		--runtime python3.6
@@ -49,7 +68,7 @@ update_lambda() {
 	F_NAME=$1; shift
 	$AWS lambda update-function-code \
 		--function-name "$F_NAME"  \
-		--zip-file fileb://./l.zip
+		--zip-file fileb://$(TARGET_DIR)/l.zip
 }
 
 delete_lambda() {
@@ -60,7 +79,7 @@ delete_lambda() {
 init_db() {
 	$AWS lambda invoke \
 		--function-name NotesInitDB  \
-		output.txt 
+		$TARGET_DIR/output.txt
 }
 usage() {
 	echo usage
@@ -70,15 +89,23 @@ while [ "$#" -gt 0 ]
 do
 	cmd=$1; shift
 	case $cmd in
-		create) create
+		create-infra) create notes-infra "$INFRA_TPL"
 		;;
-		update) update
+		update-infra) update notes-infra "$INFRA_TPL"
 		;;
-		delete) delete
+		delete-infra) delete notes-infra "$INFRA_TPL"
+		;;
+		create-app) create notes-app "$APP_TPL"
+		;;
+		update-app) update notes-app "$APP_TPL"
+		;;
+		delete-app) delete notes-app "$APP_TPL"
 		;;
 		list) list
 		;;
-		create-l-zip) create_l_zip
+		create-l-zip) create_zip_file "$TARGET_DIR/l.zip"
+		;;
+		push-app) push_app $(git rev-parse --short HEAD)
 		;;
 		create-lambda) create_lambda "$1" "$2"
 		shift 2

@@ -3,30 +3,40 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: Notes app
 
 Parameters:
+  Deployment:
+    Description: Name of the deployment (prod/dev/etc.)
+    Type: String
+    Default: dev
+  Version:
+    Description: Immutable version name (git commit hash)
+    Type: String
   DBPassword: 
     Description: Database password
     Type: String
-    Default: xyzzy
+    Default: xyzzyzyx
 
 Resources:
-  NotesEC2:
-    Type: AWS::EC2::Instance
+  LambdaExecutionRole:
+    Type: "AWS::IAM::Role"
     Properties:
-      ImageId: !FindInMap [ AWSRegionToAMI , !Ref 'AWS::Region', 64 ]
-      SecurityGroupIds:
-        - !GetAtt myVPC.DefaultSecurityGroup
-      SubnetId: !Ref mySubnet
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
 
-Outputs:
-  AppURL:
-    Description: URL
-    Value: !GetAtt Endpoint.Address
-    Export:
-      Name: NotesDBAddress
+  NotesList:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Handler: "app.list_notes"
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Code:
+        S3Bucket: notes-artifacts
+        S3Key: !Join [ "", ["app-", !Ref Version, ".zip"] ]
+      Runtime: "python3.6"
+      Timeout: "3"
 
-  DBPort:
-    Description: DB Endpoint port
-    Value: !GetAtt Endpoint.Port
-    Export:
-      Name: NotesDBPort
+#Outputs:
 
