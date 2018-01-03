@@ -2,69 +2,16 @@ AWSTemplateFormatVersion: "2010-09-09"
 
 Description: Notes infrastructure
 
-Parameters:
-  Name:
-    Description: Environment name (prod/dev/etc.)
-    Type: String
-    Default: dev
-
-  DBPassword: 
-    Description: Database password
-    Type: String
-    Default: xyzzyxyz
-
-  ArtifactBucketName:
-    Description: S3 Bucket name for artifacts
-    Type: String
-
 Resources:
   ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
       AccessControl: PublicRead
-    BucketName: !Ref ArtifactBucketName
     DeletionPolicy: Retain
-
-  NotesDB:
-    Type: AWS::RDS::DBInstance
-    Properties:
-      AllocatedStorage: '5'
-      DBInstanceClass: db.t2.micro
-      #DBSecurityGroups:
-      #  - Ref: NotesDbSecurityGroup
-      Engine: MySQL
-      MasterUsername: master
-      MasterUserPassword: !Ref DBPassword
-    DeletionPolicy: Snapshot
 
 Outputs:
   ArtifactBucket:
     Description: Name of the S3 bucket for artifacts
-    Value: !GetAtt
+    Value: !Ref ArtifactBucket
     Export:
-      Name: NotesArtifactBucket.BucketName
-
-  DBAddress:
-    Description: DB Endpoint address
-    Value: !GetAtt NotesDB.Endpoint.Address
-    Export:
-      Name: NotesDBAddress
-
-  DBPort:
-    Description: DB Endpoint port
-    Value: !GetAtt NotesDB.Endpoint.Port
-    Export:
-      Name: NotesDBPort
-
-
-#  NotesDbSecurityGroup:
-#    Type: AWS::RDS::DBSecurityGroup
-#    Properties:
-#      GroupDescription: Ingress for Amazon EC2 security group
-#      EC2VpcId: vpc-f1509598
-#        #Ref: MyVPC
-#      DBSecurityGroupIngress:
-#        - EC2SecurityGroupId: sg-b0ff1111
-#          EC2SecurityGroupOwnerId: '111122223333'
-#        - EC2SecurityGroupId: sg-ffd722222
-#          EC2SecurityGroupOwnerId: '111122223333'
+      Name: NotesArtifactBucket

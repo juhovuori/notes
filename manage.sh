@@ -4,6 +4,8 @@ REGION=eu-west-3
 PROFILE=juhocli
 AWS="/usr/local/bin/aws --profile=$PROFILE --region=$REGION"
 INFRA_TPL="$(cat cfn/infrastructure.yaml)"
+INFRA_PARAMS="[]"
+ENV_TPL="https://s3.eu-west-3.amazonaws.com/$ARTIFACT_BUCKET/${ARTIFACT_CFN_PREFIX}env-$APP_VERSION.yaml"
 APP_VERSION="$(git rev-parse --short HEAD)"
 APP_PARAMS="ParameterKey=Version,ParameterValue=$APP_VERSION"
 TARGET_DIR="$(pwd)/target"
@@ -14,18 +16,32 @@ APP_TPL="https://s3.eu-west-3.amazonaws.com/$ARTIFACT_BUCKET/${ARTIFACT_CFN_PREF
 
 mkdir -p "$TARGET_DIR"
 
+create_with_body() {
+	STACK_NAME=$1; shift
+	TPL=$1; shift
+	PARAMS=$1; shift
+	$AWS cloudformation create-stack --capabilities CAPABILITY_IAM --stack-name "$STACK_NAME" --parameters "$PARAMS" --template-body "$TPL"
+}
+
+update_with_body() {
+	STACK_NAME=$1; shift
+	TPL=$1; shift
+	PARAMS=$1; shift
+	$AWS cloudformation update-stack --stack-name "$STACK_NAME" --parameters "$PARAMS" --template-body "$TPL"
+}
+
 create() {
 	STACK_NAME=$1; shift
 	TPL=$1; shift
 	PARAMS=$1; shift
-	$AWS cloudformation create-stack --capabilities CAPABILITY_IAM --stack-name "$STACK_NAME" --parameters="$PARAMS" --template-url "$TPL"
+	$AWS cloudformation create-stack --capabilities CAPABILITY_IAM --stack-name "$STACK_NAME" --parameters "$PARAMS" --template-url "$TPL"
 }
 
 update() {
 	STACK_NAME=$1; shift
 	TPL=$1; shift
 	PARAMS=$1; shift
-	$AWS cloudformation update-stack --stack-name "$STACK_NAME" --parameters="$PARAMS" --template-url "$TPL"
+	$AWS cloudformation update-stack --stack-name "$STACK_NAME" --parameters "$PARAMS" --template-url "$TPL"
 }
 
 delete() {
@@ -102,17 +118,26 @@ while [ "$#" -gt 0 ]
 do
 	cmd=$1; shift
 	case $cmd in
-		create-infra) create notes-infra "$INFRA_TPL"
+		create-infra) create_with_body notes-infra "$INFRA_TPL" "$INFRA_PARAMS"
 		;;
-		update-infra) update notes-infra "$INFRA_TPL"
+		update-infra) update_with_body notes-infra "$INFRA_TPL" "$INFRA_PARAMS"
 		;;
-		delete-infra) delete notes-infra "$INFRA_TPL"
+		delete-infra) delete notes-infra "$INFRA_TPL" "$INFRA_PARAMS"
+		;;
+		create-env) create notes-infra "$ENV_TPL" "ParameterKey=Name,ParameterValue=$1"
+		shift
+		;;
+		update-env) update notes-infra "$ENV_TPL" "ParameterKey=Name,ParameterValue=$1"
+		shift
+		;;
+		delete-env) delete notes-infra "$ENV_TPL"
+		shift
 		;;
 		create-app) create notes-app "$APP_TPL" "$APP_PARAMS"
 		;;
 		update-app) update notes-app "$APP_TPL" "$APP_PARAMS"
 		;;
-		delete-app) delete notes-app "$APP_TPL" "$APP_PARAMS"
+		delete-app) delete notes-app "$APP_TPL"
 		;;
 		list) list
 		;;
@@ -120,7 +145,7 @@ do
 		;;
 		push-app-cfn) push_cfn app "$APP_VERSION"
 		;;
-		push-infra-cfn) push_cfn infra "$1"
+		push-env-cfn) push_cfn env "$1"
 		shift
 		;;
 		push-app) push_app "$APP_VERSION"
